@@ -52,7 +52,7 @@ def validate(with_replica, with_replication_slot):
     if (not with_replica) and (with_replication_slot):
         print("warning: ignoring '-s/--with-replication-slot' as it must be used with '-r/--with-replica'");
 
-def clone_repository(work_directory, no_replace, all_branches, version = None, pg_config = None):
+def clone_repository(work_directory, no_replace, all_branches, version = None, include_patches = None):
     version_git_opts = ""
 
     # replace the clone of the mirror
@@ -90,17 +90,23 @@ def clone_repository(work_directory, no_replace, all_branches, version = None, p
         sys.exit(1);
 
     # build the binaries
-    build_postgres(work_directory, version, pg_config);
+    build_postgres(work_directory, version, include_patches);
 
-def build_postgres(work_directory, version, pg_config):
+def build_postgres(work_directory, version, include_patches):
     os.environ["PGHOME"] = os.path.join(work_directory, PGHOME_DIRECTORY)
+
+    patches_to_include = "";
+    if include_patches:
+        patches_to_include = "git apply {}".format(include_patches);
 
     cmd = """
             cd {};
+            {};
             ./configure --prefix={} --with-uuid=ossp --with-openssl >/dev/null;
             make install -j{} >/dev/null
           """.format(
                         os.path.join(work_directory, CLONE_DIRECTORY),
+                        patches_to_include,
                         os.environ["PGHOME"],
                         CPU_COUNT
                 );
@@ -271,6 +277,7 @@ parser.add_argument('-r', '--with-replica', action = 'store_true', help = 'creat
 parser.add_argument('-s', '--with-replication-slot', action = 'store_true', help = 'create a replication slot');
 parser.add_argument('-c', '--pg-config', help = 'comma delimited key-value pairs of parameters');
 parser.add_argument('-k', '--kill-pg', action = 'store_true', help = 'force kill postgres before creating new instances');
+parser.add_argument('-p', '--include-patches', help = 'include patches');
 parser.add_argument('-v', '--version', help = """
 use specific version, i.e. '14.1' or '11.STABLE'.
 If a version is not set, the HEAD branch will be used.
@@ -280,7 +287,7 @@ args = parser.parse_args();
 
 validate(args.with_replica, args.with_replication_slot);
 # let's start doing work
-clone_repository(args.work_directory, args.no_replace, args.all_branches, args.version, args.pg_config);
+clone_repository(args.work_directory, args.no_replace, args.all_branches, args.version, args.include_patches);
 initdb(args.work_directory, args.no_initdb, args.with_replica, args.with_replication_slot, args.kill_pg, args.pg_config);
 
 # show the tag/branches
