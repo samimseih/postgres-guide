@@ -42,7 +42,7 @@ WHOAMI = getpass.getuser();
 
 def validate(with_replica, with_replication_slot):
     if platform == "linux" or platform == "linux2":
-        os.system("sudo yum install git gcc readline-devel zlib-devel flex bison -y");
+        os.system("sudo yum install git gcc readline-devel openssl-devel uuid-devel zlib-devel flex bison -y");
     elif platform == "darwin":
         pass;
     else:
@@ -97,7 +97,7 @@ def build_postgres(work_directory, version, pg_config):
 
     cmd = """
             cd {};
-            ./configure --prefix={} >/dev/null; 
+            ./configure --prefix={} --with-uuid=ossp --with-openssl >/dev/null;
             make install -j{} >/dev/null
           """.format(
                         os.path.join(work_directory, CLONE_DIRECTORY),
