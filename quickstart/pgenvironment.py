@@ -101,7 +101,7 @@ def build_postgres(work_directory, version, include_patches):
 
     cmd = """
             cd {};
-            {};
+            {}
             ./configure --prefix={} --with-uuid=ossp --with-openssl >/dev/null;
             make install -j{} >/dev/null
           """.format(
