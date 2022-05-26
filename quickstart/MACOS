@@ -1,0 +1,4 @@
+## For MacOS, follow the steps before running pgenvironment.py
+export LDFLAGS="-L/usr/local/opt/openssl@3/lib -L/usr/local/opt/ossp-uuid/lib"
+export CPPFLAGS="-I/usr/local/opt/openssl@3/include -I/usr/local/opt/ossp-uuid/include/ossp"
+perl -MCPAN -e 'install IPC::Run'

@@ -99,15 +99,21 @@ def build_postgres(work_directory, version, include_patches):
     if include_patches:
         patches_to_include = "git apply {}".format(include_patches);
 
+    if platform == "darwin":
+        uuid = "e2fs"
+    else:
+        uuid = "ossp"
+
     cmd = """
             cd {};
             {}
-            ./configure --prefix={} --with-uuid=ossp --with-openssl --enable-debug --enable-tap-tests >/dev/null;
+            ./configure --prefix={} --with-uuid={} --with-openssl --enable-debug --enable-tap-tests >/dev/null;
             make install -j{} >/dev/null
           """.format(
                         os.path.join(work_directory, CLONE_DIRECTORY),
                         patches_to_include,
                         os.environ["PGHOME"],
+                        uuid,
                         CPU_COUNT
                 );
     print("running " + "'" + cmd + "'");
