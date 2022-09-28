@@ -107,7 +107,7 @@ def build_postgres(work_directory, version, include_patches):
     cmd = """
             cd {};
             {}
-            ./configure --prefix={} --with-uuid={} --with-openssl --enable-debug --enable-tap-tests >/dev/null;
+            ./configure --prefix={} --with-uuid={} --with-openssl --enable-debug --enable-tap-tests CFLAGS="-fno-omit-frame-pointer" >/dev/null;
             make install -j{} >/dev/null
           """.format(
                         os.path.join(work_directory, CLONE_DIRECTORY),
