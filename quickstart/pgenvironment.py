@@ -168,10 +168,20 @@ def initdb(work_directory, no_initdb, with_replica, with_replication_slot, kill_
 
     generate_activate_script(args.work_directory);
 
+    os.system("rm -rfv {work_directory}/backups >/dev/null; mkdir {work_directory}/backups >/dev/null".\
+              format(work_directory=args.work_directory));
+    os.system("rm -rfv {work_directory}/archive_logs >/dev/null; mkdir {work_directory}/archive_logs >/dev/null".\
+              format(work_directory=args.work_directory));
+    os.system("echo wal_level = logical >> $PGDATA/postgresql.conf");
+    os.system("echo archive_mode = off >> $PGDATA/postgresql.conf");
+    os.system(r"echo restore_command = \'cp {work_directory}/archive_logs/%f %p\' >> $PGDATA/postgresql.conf".\
+              format(work_directory=args.work_directory));
+    os.system(r"echo archive_command = \'test \! -f {work_directory}/archive_logs/%f \&\& cp %p {work_directory}/archive_logs/%f\'  >> $PGDATA/postgresql.conf".\
+              format(work_directory=args.work_directory));
+
     if (with_replica):
         initreplica(work_directory, with_replication_slot);
     else:
-        os.system("echo wal_level = logical >> $PGDATA/postgresql.conf");
         os.system("pg_ctl start -l $PGDATA/logfile");
 
 def initreplica(work_directory, with_replication_slot):
@@ -216,6 +226,9 @@ def initreplica(work_directory, with_replication_slot):
     os.environ["PGDATA"] = os.environ["PGDATA"]+"_sec";
     os.system("echo '#### streaming replication settings' >> $PGDATA/postgresql.conf");
     os.system("echo port={} >> $PGDATA/postgresql.conf".format(int(os.environ["PGPORT"]) + 1));
+    os.system("echo archive_mode = off >> $PGDATA/postgresql.conf");
+    os.system(r"echo restore_command = \'\' >> $PGDATA/postgresql.conf");
+    os.system(r"echo archive_command = \'\' >> $PGDATA/postgresql.conf");
     os.system("pg_ctl start -l $PGDATA/logfile");
 
     generate_activate_script(work_directory, True);
