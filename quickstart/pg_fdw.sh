@@ -1,9 +1,25 @@
-## set username
+total_partitions=$1
+
+if [ -z $1 ];
+then
+	echo ""
+	echo ""
+	echo ""
+	echo "Must supply # of partitions as the first argument"
+	echo ""
+	echo ""
+	echo ""
+	exit 1;
+fi
 WHOAMI=`whoami`
 PRIMPORT=5432
 SECPORT=5433
 
-## promote standby to primary
+python3 pgenvironment.py \
+        -D ~/Projects/eqp \
+        -krN \
+        -c "shared_preload_libraries=pg_stat_statements";
+
 psql -h localhost -d postgres -U $WHOAMI -p $SECPORT <<EOF
 select pg_promote();
 EOF
@@ -11,6 +27,7 @@ EOF
 ## create db1 on fdw target
 psql -h localhost -d postgres -U $WHOAMI -p $SECPORT <<EOF
 create database db1;
+\c db1
 create extension pg_stat_statements;
 select count(*) from pg_stat_statements;
 EOF
@@ -18,8 +35,10 @@ EOF
 ## create db1 on fdw source
 psql -h localhost -d postgres -U $WHOAMI -p $PRIMPORT <<EOF
 create database db1;
+\c db1
+create extension pg_stat_statements;
+select count(*) from pg_stat_statements;
 EOF
-
 ## create foreign server on fdw source
 psql -h localhost -d db1 -U $WHOAMI -p $PRIMPORT <<EOF
 CREATE EXTENSION postgres_fdw;
@@ -28,54 +47,52 @@ CREATE SERVER kcn FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', d
 CREATE USER MAPPING FOR CURRENT_USER SERVER kcn OPTIONS (user '${WHOAMI}');
 EOF
 
-## create customer table on fdw_source
+pgbench -h localhost -d db1 -U $WHOAMI -p $SECPORT -i -s 1 --partition-method=hash --partitions=${total_partitions}
+pgbench -h localhost -d db1 -U $WHOAMI -p $PRIMPORT -i -s 1 --partition-method=hash --partitions=1
 psql -h localhost -d db1 -U $WHOAMI -p $PRIMPORT <<EOF
-DROP TABLE customer;
-CREATE TABLE customer (customer_id int, customer_name text, customer_location int) PARTITION BY HASH (customer_id);
-DROP TABLE locations;
-CREATE TABLE locations (location_id int, state text, city text) PARTITION BY HASH (location_id);
+alter table pgbench_accounts detach partition pgbench_accounts_1;
+drop table pgbench_accounts_1;
+alter table pgbench_accounts drop constraint pgbench_accounts_pkey;
+drop table pgbench_tellers;
+drop table pgbench_branches;
+drop table pgbench_history;
+CREATE FOREIGN TABLE pgbench_history
+(
+    tid integer,
+    bid integer,
+    aid integer,
+    delta integer,
+    mtime timestamp without time zone,
+    filler character(22)
+) SERVER kcn;
+
+CREATE FOREIGN TABLE pgbench_tellers
+(
+    tid integer,
+    bid integer,
+    tbalance integer,
+    filler character(84)
+) SERVER KCN;
+
+CREATE FOREIGN TABLE pgbench_branches
+(
+    bid integer,
+    bbalance integer,
+    filler character(88)
+) SERVER KCN;
 EOF
 
-## create partition of fdw target
-psql -h localhost -d db1 -U $WHOAMI -p $SECPORT <<EOF
-DROP TABLE customer, customer_0, customer_1, customer_2;
-CREATE TABLE customer (customer_id int, customer_name text, customer_location int) PARTITION BY HASH (customer_id);
-CREATE TABLE customer_0 PARTITION OF customer FOR VALUES WITH (MODULUS 3,REMAINDER 0);
-CREATE TABLE customer_1 PARTITION OF customer FOR VALUES WITH (MODULUS 3,REMAINDER 1);
-CREATE TABLE customer_2 PARTITION OF customer FOR VALUES WITH (MODULUS 3,REMAINDER 2);
+for (( c=0; c<$total_partitions; c++ ))
+do 
+   let "t=c+1"
+   echo "CREATE FOREIGN TABLE pgbench_accounts_${t} PARTITION OF pgbench_accounts FOR VALUES WITH (MODULUS ${total_partitions},REMAINDER ${c}) SERVER kcn;" >>/tmp/$$.create.$$.sql
+done
+psql -h localhost -d db1 -U $WHOAMI -p $PRIMPORT -f /tmp/$$.create.$$.sql ; rm -rfv /tmp/$$.create.$$.sql
 
-DROP TABLE locations, locations_0, locations_1, locations_2;
-CREATE TABLE locations (location_id int, state text, city text) PARTITION BY HASH (location_id);
-CREATE TABLE locations_0 PARTITION OF locations FOR VALUES WITH (MODULUS 3,REMAINDER 0);
-CREATE TABLE locations_1 PARTITION OF locations FOR VALUES WITH (MODULUS 3,REMAINDER 1);
-CREATE TABLE locations_2 PARTITION OF locations FOR VALUES WITH (MODULUS 3,REMAINDER 2);
-
-CREATE sequence customer_id_seq;
-CREATE sequence locations_id_seq;
-EOF
-
-## create partition table with foreign partitions on fdw source
-psql -h localhost -d db1 -U $WHOAMI -p $PRIMPORT  <<EOF
-CREATE FOREIGN TABLE customer_0
-    PARTITION OF customer FOR VALUES WITH (MODULUS 3,REMAINDER 0)
-    SERVER kcn;
-CREATE FOREIGN TABLE customer_1
-    PARTITION OF customer FOR VALUES WITH (MODULUS 3,REMAINDER 1)
-    SERVER kcn;
-CREATE FOREIGN TABLE customer_2
-    PARTITION OF customer FOR VALUES WITH (MODULUS 3,REMAINDER 2)
-    SERVER kcn;
-select * from customer;
-
-CREATE FOREIGN TABLE locations_0
-    PARTITION OF locations FOR VALUES WITH (MODULUS 3,REMAINDER 0)
-    SERVER kcn;
-CREATE FOREIGN TABLE locations_1
-    PARTITION OF locations FOR VALUES WITH (MODULUS 3,REMAINDER 1)
-    SERVER kcn;
-CREATE FOREIGN TABLE locations_2
-    PARTITION OF locations FOR VALUES WITH (MODULUS 3,REMAINDER 2)
-    SERVER kcn;
-select * from locations;
-
-EOF
+echo ""
+echo ""
+echo ""
+echo PGBENCH COMMAND IS: pgbench -h localhost -d db1 -U $WHOAMI -p $PRIMPORT  -c 10 -t 1000
+echo ""
+echo ""
+echo ""

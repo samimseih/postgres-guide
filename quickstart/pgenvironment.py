@@ -182,11 +182,12 @@ def initdb(work_directory, no_initdb, with_replica, with_replication_slot, kill_
               format(work_directory=args.work_directory));
     os.system(r"echo archive_command = \'test \! -f {work_directory}/archive_logs/%f \&\& cp %p {work_directory}/archive_logs/%f\'  >> $PGDATA/postgresql.conf".\
               format(work_directory=args.work_directory));
+    os.system("echo logging_collector = on >> $PGDATA/postgresql.conf");
 
     if (with_replica):
         initreplica(work_directory, with_replication_slot);
     else:
-        os.system("pg_ctl start -l $PGDATA/logfile");
+        os.system("pg_ctl start");
 
 def initreplica(work_directory, with_replication_slot):
     setenv(work_directory);
@@ -197,7 +198,7 @@ def initreplica(work_directory, with_replication_slot):
     os.system("echo '#### streaming replication settings' >> $PGDATA/postgresql.conf");
     os.system("echo max_wal_senders = 5 >> $PGDATA/postgresql.conf");
     os.system("echo host replication   all   all  trust >> $PGDATA/pg_hba.conf");
-    os.system("pg_ctl start -l $PGDATA/logfile");
+    os.system("pg_ctl start");
 
     err = os.system("rm -rfv ${PGDATA}_sec >/dev/null");
     if (err > 0):
@@ -233,7 +234,7 @@ def initreplica(work_directory, with_replication_slot):
     os.system("echo archive_mode = off >> $PGDATA/postgresql.conf");
     os.system(r"echo restore_command = \'\' >> $PGDATA/postgresql.conf");
     os.system(r"echo archive_command = \'\' >> $PGDATA/postgresql.conf");
-    os.system("pg_ctl start -l $PGDATA/logfile");
+    os.system("pg_ctl start");
 
     generate_activate_script(work_directory, True);
 
@@ -263,7 +264,7 @@ export LD_LIBRARY_PATH={}:$LD_LIBRARY_PATH
 export PGDATABASE={}
 export PGUSER={}
 export PGPORT={}
-alias start_db="pg_ctl start -l {}"
+alias start_db="pg_ctl start"
 alias stop_db="pg_ctl stop -mf"
 """.format(
         os.environ["PGHOME"], 
@@ -272,8 +273,7 @@ alias stop_db="pg_ctl stop -mf"
         os.path.join(pgdata, "lib"),
         DEFAULT_DATABASE,
         WHOAMI,
-        port,
-        os.path.join(pgdata, "logfile")
+        port
         );
 
     with open(os.path.join(work_directory, act), "w") as text_file:
