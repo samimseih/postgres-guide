@@ -17,12 +17,12 @@ then
 
 	if [ -z $4 ];
 	then
-		python3 pgenvironment.py -D $2 -kr -c "shared_preload_libraries=pg_stat_statements";
+		python3 pgenvironment.py -D $2 -kr;
 	else
-		python3 pgenvironment.py -D $2 -kr -p $4 -c "shared_preload_libraries=pg_stat_statements";
+		python3 pgenvironment.py -D $2 -kr -p $4;
 	fi;
 else
-	python3 pgenvironment.py -D $2 -krN -c "shared_preload_libraries=pg_stat_statements";
+	python3 pgenvironment.py -D $2 -krN;
 fi;
 
 . ${2}/activate
