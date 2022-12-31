@@ -1,31 +1,34 @@
-total_partitions=$1
-pghome=$2
-recreate_home=$3
-
-if [[ -z $1 || -z $2 ]];
+if [[ -z $1 || -z $2 || -z $3 ]];
 then
 	echo ""
-	echo "./pg_fdw.sh <# of partitions> <pg data> <recreate home (t to recreate)> <patch to apply. Can only be used with recreate home set to 't'>"
+	echo "./pg_fdw.sh <# of partitions> <pg data> <scale factor> <recreate home (t to recreate)> <patch to apply. Can only be used with recreate home set to 't'>"
 	exit 1;
 fi
+
+total_partitions=$1
+pghome=$2
+scale_factor=$3
+recreate_home=$4
+patch=$5
+
 WHOAMI=`whoami`
 PRIMPORT=5432
 SECPORT=5433
 
-if [ "$3" == "t" ];
+if [ "$recreate_home" == "t" ];
 then
 
-	if [ -z $4 ];
+	if [ -z $patch ];
 	then
-		python3 pgenvironment.py -D $2 -kr;
+		python3 pgenvironment.py -D $pghome -kr;
 	else
-		python3 pgenvironment.py -D $2 -kr -p $4;
+		python3 pgenvironment.py -D $pghome -kr -p $patch;
 	fi;
 else
 	python3 pgenvironment.py -D $2 -krN;
 fi;
 
-. ${2}/activate
+. ${pghome}/activate
 
 psql -h localhost -d postgres -U $WHOAMI -p $SECPORT <<EOF
 select pg_promote();
@@ -54,7 +57,7 @@ CREATE SERVER kcn FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', d
 CREATE USER MAPPING FOR CURRENT_USER SERVER kcn OPTIONS (user '${WHOAMI}');
 EOF
 
-pgbench -h localhost -d db1 -U $WHOAMI -p $SECPORT -i -s 1 --partition-method=hash --partitions=${total_partitions}
+pgbench -h localhost -d db1 -U $WHOAMI -p $SECPORT -i -s $scale_factor --partition-method=hash --partitions=${total_partitions}
 pgbench -h localhost -d db1 -U $WHOAMI -p $PRIMPORT -i -s 1 --partition-method=hash --partitions=1
 psql -h localhost -d db1 -U $WHOAMI -p $PRIMPORT <<EOF
 alter table pgbench_accounts detach partition pgbench_accounts_1;
