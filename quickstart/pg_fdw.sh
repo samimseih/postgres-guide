@@ -1,20 +1,29 @@
 total_partitions=$1
 pghome=$2
+recreate_home=$3
 
 if [[ -z $1 || -z $2 ]];
 then
 	echo ""
-	echo "./pg_fdw.sh <# of partitions> <pg data>"
+	echo "./pg_fdw.sh <# of partitions> <pg data> <recreate home (t to recreate)"
 	exit 1;
 fi
 WHOAMI=`whoami`
 PRIMPORT=5432
 SECPORT=5433
 
+if [ "$3" == "t" ];
+then
+python3 pgenvironment.py \
+        -D $2 \
+        -kr \
+        -c "shared_preload_libraries=pg_stat_statements";
+else
 python3 pgenvironment.py \
         -D $2 \
         -krN \
         -c "shared_preload_libraries=pg_stat_statements";
+fi;
 
 psql -h localhost -d postgres -U $WHOAMI -p $SECPORT <<EOF
 select pg_promote();
