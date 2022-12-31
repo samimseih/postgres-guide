@@ -5,7 +5,7 @@ recreate_home=$3
 if [[ -z $1 || -z $2 ]];
 then
 	echo ""
-	echo "./pg_fdw.sh <# of partitions> <pg data> <recreate home (t to recreate)"
+	echo "./pg_fdw.sh <# of partitions> <pg data> <recreate home (t to recreate)> <patch to apply. Can only be used with recreate home set to 't'>"
 	exit 1;
 fi
 WHOAMI=`whoami`
@@ -14,16 +14,18 @@ SECPORT=5433
 
 if [ "$3" == "t" ];
 then
-python3 pgenvironment.py \
-        -D $2 \
-        -kr \
-        -c "shared_preload_libraries=pg_stat_statements";
+
+	if [ -z $4 ];
+	then
+		python3 pgenvironment.py -D $2 -kr -c "shared_preload_libraries=pg_stat_statements";
+	else
+		python3 pgenvironment.py -D $2 -kr -p $4 -c "shared_preload_libraries=pg_stat_statements";
+	fi;
 else
-python3 pgenvironment.py \
-        -D $2 \
-        -krN \
-        -c "shared_preload_libraries=pg_stat_statements";
+	python3 pgenvironment.py -D $2 -krN -c "shared_preload_libraries=pg_stat_statements";
 fi;
+
+. ${2}/activate
 
 psql -h localhost -d postgres -U $WHOAMI -p $SECPORT <<EOF
 select pg_promote();
