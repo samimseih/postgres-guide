@@ -1,14 +1,10 @@
 total_partitions=$1
+pghome=$2
 
-if [ -z $1 ];
+if [[ -z $1 || -z $2 ]];
 then
 	echo ""
-	echo ""
-	echo ""
-	echo "Must supply # of partitions as the first argument"
-	echo ""
-	echo ""
-	echo ""
+	echo "./pg_fdw.sh <# of partitions> <pg data>"
 	exit 1;
 fi
 WHOAMI=`whoami`
@@ -16,7 +12,7 @@ PRIMPORT=5432
 SECPORT=5433
 
 python3 pgenvironment.py \
-        -D ~/Projects/eqp \
+        -D $2 \
         -krN \
         -c "shared_preload_libraries=pg_stat_statements";
 
