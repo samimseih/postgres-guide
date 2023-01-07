@@ -42,7 +42,7 @@ WHOAMI = getpass.getuser();
 
 def validate(with_replica, with_replication_slot):
     if platform == "linux" or platform == "linux2":
-        os.system("sudo yum install git gcc readline-devel openssl-devel uuid-devel zlib-devel flex bison sysstat gdb dstat perl-Test-Harness perl-IPC-Run perl-Test-Simple -y");
+        os.system("sudo yum install git gcc readline-devel openssl-devel uuid-devel zlib-devel flex bison sysstat gdb dstat perl-Test-Harness perl-IPC-Run perl-Test-Simple libxslt autoconf-archive docbook-xsl -y");
     elif platform == "darwin":
         pass;
     else:
@@ -107,7 +107,7 @@ def build_postgres(work_directory, version, include_patches):
     cmd = """
             cd {};
             {}
-            ./configure --prefix={} --with-uuid={} --with-openssl --enable-debug --enable-tap-tests CFLAGS="-fno-omit-frame-pointer" >/dev/null;
+            ./configure --prefix={} --with-uuid={} --enable-cassert --with-openssl --enable-debug --enable-tap-tests CFLAGS="-fno-omit-frame-pointer" >/dev/null;
             make install -j{} >/dev/null;
 			cd contrib/pg_stat_statements;
 			make install;
