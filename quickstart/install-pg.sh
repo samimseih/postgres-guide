@@ -19,6 +19,7 @@ function install_prereqs()
 		libxslt \
 		autoconf-archive \
 		docbook-xsl \
+  		libicu-devel \
 		libtool -y
 
 	sudo dnf install perl -y
@@ -36,10 +37,10 @@ function install_pg()
 	else
         	git clone \
 			-c advice.detachedHead=false  \
-			--branch REL_${version} https://git.postgresql.org/git/postgresql.git $directory/postgresql
+			--branch REL_${version} https://git.postgresql.org/git/postgresql.git $directory/postgres
 	fi;
 
-	cd postgresql
+	cd postgres
 	./configure --prefix $directory/pghome
 	make install -j $(cat /proc/cpuinfo  | grep processor | tail -1 | awk '{print $2}' FS=":")
 	cd $MYPWD
