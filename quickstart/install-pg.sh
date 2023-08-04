@@ -73,7 +73,7 @@ function create_db()
 	pg_ctl start
 }
 
-#install_prereqs
-#install_pg
+install_prereqs
+install_pg
 create_prof
 create_db
