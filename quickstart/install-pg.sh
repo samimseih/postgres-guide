@@ -43,6 +43,11 @@ function install_pg()
 
 	./configure --prefix $directory/pghome --with-openssl
 	make install -j $(cat /proc/cpuinfo  | grep processor | tail -1 | awk '{print $2}' FS=":")
+	cd $directory/postgresql/contrib
+	cd pg_stat_statements
+	make install
+	cd ../postgres_fdw
+	make install
 	cd $MYPWD
 }
 
@@ -83,6 +88,15 @@ function create_db()
 	echo logging_collector = on >> $PGDATA/postgresql.conf
 	echo max_wal_senders = 5 >> $PGDATA/postgresql.conf
 	echo host replication   all   all  trust >> $PGDATA/pg_hba.conf
+	echo ssl=on >> $PGDATA/postgresql.conf
+
+	MYPWD=`pwd`
+	cd $PGDATA
+	openssl req -new -x509 -days 365 -nodes -text -out server.crt \
+	-keyout server.key -subj "/CN=localhost"
+	chmod og-rwx server.key
+	cd $MYPWD
+
 	pg_ctl start
 }
 
@@ -105,12 +119,21 @@ function create_replica()
 	echo archive_mode = off >> $PGDATA/postgresql.conf
 	echo restore_command = \'\' >> $PGDATA/postgresql.conf
 	echo archive_command = \'\' >> $PGDATA/postgresql.conf
+	echo ssl=on >> $PGDATA/postgresql.conf
+
+	MYPWD=`pwd`
+	cd $PGDATA
+	openssl req -new -x509 -days 365 -nodes -text -out server.crt \
+	-keyout server.key -subj "/CN=localhost"
+	chmod og-rwx server.key
+	cd $MYPWD
+
 	pg_ctl start
 }
 
-#install_prereqs
-#install_pg
-#create_prof
-#create_db
-#create_replica
-#create_prof_replica
+install_prereqs
+install_pg
+create_prof
+create_db
+create_replica
+create_prof_replica
