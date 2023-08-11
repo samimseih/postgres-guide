@@ -43,12 +43,17 @@ function install_pg()
 
 	./configure --prefix $directory/pghome --with-openssl
 	make install -j $(cat /proc/cpuinfo  | grep processor | tail -1 | awk '{print $2}' FS=":")
-	cd $directory/postgresql/contrib
-	cd pg_stat_statements
-	make install
-	cd ../postgres_fdw
-	make install
 	cd $MYPWD
+}
+
+function build_extensions()
+{
+        cd $directory/postgres/contrib
+        cd pg_stat_statements
+        make install
+        cd ../postgres_fdw
+        make install
+        cd $MYPWD
 }
 
 function create_prof()
@@ -98,6 +103,9 @@ function create_db()
 	cd $MYPWD
 
 	pg_ctl start
+        psql -c "alter system set shared_preload_libraries='pg_stat_statements'";
+        pg_ctl stop -mf
+        pg_ctl start
 }
 
 function create_replica()
@@ -129,10 +137,15 @@ function create_replica()
 	cd $MYPWD
 
 	pg_ctl start
+	psql -c "alter system set shared_preload_libraries='pg_stat_statements'";
+	pg_ctl stop -mf
+	pg_ctl start
+
 }
 
 install_prereqs
 install_pg
+build_extensions
 create_prof
 create_db
 create_replica
