@@ -48,7 +48,7 @@ function install_pg()
 
 function build_extensions()
 {
-        cd $directory/postgres/contrib
+        cd $directory/postgresql/contrib
         cd pg_stat_statements
         make install
         cd ../postgres_fdw
