@@ -33,7 +33,7 @@ function install_pg()
 	if [[ "$version" == "current" ]];
 	then
         	git clone https://github.com/postgres/postgres.git $directory/postgresql
-		cd postgres
+		cd postgresql
 	else
         	git clone \
 			-c advice.detachedHead=false  \
