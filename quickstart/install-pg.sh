@@ -22,6 +22,8 @@ function install_prereqs()
 		libtool -y
 
 	sudo dnf install perl -y
+	sudo dnf debuginfo-install glibc-2.34-52.amzn2023.0.3.aarch64 \
+		openssl-libs-3.0.8-1.amzn2023.0.3.aarch64 zlib-1.2.11-33.amzn2023.0.4.aarch64 -y
 }
 
 function install_pg()
@@ -41,7 +43,7 @@ function install_pg()
 		cd postgresql
 	fi;
 
-	./configure --prefix $directory/pghome --with-openssl
+	./configure --prefix $directory/pghome --with-openssl --enable-debug --enable-tap-tests CFLAGS="-fno-omit-frame-pointer"
 	make install -j $(cat /proc/cpuinfo  | grep processor | tail -1 | awk '{print $2}' FS=":")
 	cd $MYPWD
 }
@@ -140,7 +142,16 @@ function create_replica()
 	psql -c "alter system set shared_preload_libraries='pg_stat_statements'";
 	pg_ctl stop -mf
 	pg_ctl start
+}
 
+function create_fdw()
+{
+        source $directory/activate.sh
+	psql -c "create extension postgres_fdw"
+	psql -c "CREATE SERVER r1 FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', dbname 'postgres', port '5433')"
+	psql -c "CREATE USER MAPPING FOR postgres SERVER r1 OPTIONS (user 'postgres', password 'password')"
+	source $directory/activate_sec.sh
+	psql -c "select pg_promote()"
 }
 
 install_prereqs
@@ -150,3 +161,4 @@ create_prof
 create_db
 create_replica
 create_prof_replica
+create_fdw
