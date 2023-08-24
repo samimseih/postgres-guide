@@ -98,10 +98,9 @@ function create_db()
 	echo ssl=on >> $PGDATA/postgresql.conf
 
 	MYPWD=`pwd`
-	cd $PGDATA
-	openssl req -new -x509 -days 365 -nodes -text -out server.crt \
-	-keyout server.key -subj "/CN=localhost"
-	chmod og-rwx server.key
+	openssl req -new -x509 -days 365 -nodes -text -out $PGDATA/server.crt \
+	-keyout $PGDATA/server.key -subj "/CN=localhost"
+	chmod og-rwx $PGDATA/server.key
 	cd $MYPWD
 
 	pg_ctl start
@@ -132,10 +131,9 @@ function create_replica()
 	echo ssl=on >> $PGDATA/postgresql.conf
 
 	MYPWD=`pwd`
-	cd $PGDATA
-	openssl req -new -x509 -days 365 -nodes -text -out server.crt \
-	-keyout server.key -subj "/CN=localhost"
-	chmod og-rwx server.key
+	openssl req -new -x509 -days 365 -nodes -text -out $PGDATA/server.crt \
+	-keyout $PGDATA/server.key -subj "/CN=localhost"
+	chmod og-rwx $PGDATA/server.key
 	cd $MYPWD
 
 	pg_ctl start
