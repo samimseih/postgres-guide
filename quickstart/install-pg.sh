@@ -19,11 +19,14 @@ function install_prereqs()
 		libxslt \
 		autoconf-archive \
 		docbook-xsl \
+  		libicu-devel \
+    		openssl-devel \
 		libtool -y
 
 	sudo dnf install perl -y
-	sudo dnf debuginfo-install glibc-2.34-52.amzn2023.0.3.aarch64 \
-		openssl-libs-3.0.8-1.amzn2023.0.3.aarch64 zlib-1.2.11-33.amzn2023.0.4.aarch64 -y
+ 	## when running GDB, GDB will complain about missing packages such as below.
+	#sudo dnf debuginfo-install glibc-2.34-52.amzn2023.0.3.aarch64 \
+		#openssl-libs-3.0.8-1.amzn2023.0.3.aarch64 zlib-1.2.11-33.amzn2023.0.4.aarch64 -y
 }
 
 function install_pg()
