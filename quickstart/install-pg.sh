@@ -91,7 +91,7 @@ function create_db()
 	rm -rfv $directory/archive_logs >/dev/null; mkdir $directory/archive_logs >/dev/null
 	initdb -U postgres
 	echo wal_level = logical >> $PGDATA/postgresql.conf
-	echo archive_mode = off >> $PGDATA/postgresql.conf
+	echo archive_mode = on >> $PGDATA/postgresql.conf
 	echo restore_command = \'cp $directory/archive_logs/%f %p\' >> $PGDATA/postgresql.conf
 	echo archive_command = \'test \! -f $directory/archive_logs/%f \&\& \
 		cp %p $directory/archive_logs/%f\'  >> $PGDATA/postgresql.conf
