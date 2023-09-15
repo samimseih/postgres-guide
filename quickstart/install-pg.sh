@@ -21,6 +21,7 @@ function install_prereqs()
 		docbook-xsl \
   		libicu-devel \
     		openssl-devel \
+      		uuid-devel \
 		libtool -y
 
 	sudo dnf install perl -y
@@ -46,7 +47,7 @@ function install_pg()
 		cd postgresql
 	fi;
 
-	./configure --prefix $directory/pghome --with-openssl --enable-debug --enable-tap-tests CFLAGS="-fno-omit-frame-pointer"
+	./configure --prefix $directory/pghome --with-uuid=ossp --with-openssl --enable-debug --enable-tap-tests CFLAGS="-fno-omit-frame-pointer"
 	make install -j $(cat /proc/cpuinfo  | grep processor | tail -1 | awk '{print $2}' FS=":")
 	cd $MYPWD
 }
@@ -57,6 +58,8 @@ function build_extensions()
         cd pg_stat_statements
         make install
         cd ../postgres_fdw
+        make install
+        cd ../uuid-ossp
         make install
         cd $MYPWD
 }
