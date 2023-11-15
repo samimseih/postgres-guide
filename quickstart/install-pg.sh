@@ -22,6 +22,7 @@ function install_prereqs()
   		libicu-devel \
     		openssl-devel \
       		uuid-devel \
+		clang \
 		libtool -y
 
 	sudo dnf install perl -y
